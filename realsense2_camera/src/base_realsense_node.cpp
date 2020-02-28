@@ -1082,12 +1082,12 @@ void BaseRealSenseNode::setupFilters()
 
 cv::Mat& BaseRealSenseNode::fix_depth_scale(const cv::Mat& from_image, cv::Mat& to_image)
 {
-    static const float meter_to_mm = 0.001f;
-    if (fabs(_depth_scale_meters - meter_to_mm) < 1e-6)
-    {
-        to_image = from_image;
-        return to_image;
-    }
+  // static const float meter_to_mm = 0.001f;
+  // if (fabs(_depth_scale_meters - meter_to_mm) < 1e-6)
+  // {
+  //     to_image = from_image;
+  //     return to_image;
+  // }
 
     if (to_image.size() != from_image.size())
     {
@@ -1115,7 +1115,7 @@ cv::Mat& BaseRealSenseNode::fix_depth_scale(const cv::Mat& from_image, cv::Mat& 
         p_to = to_image.ptr<float>(i);
         for ( j = 0; j < nCols; ++j)
         {
-            p_to[j] = p_from[j] * _depth_scale_meters / meter_to_mm;
+            p_to[j] = p_from[j] * _depth_scale_meters;
         }
     }
     return to_image;
@@ -2179,6 +2179,7 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const ros::Time& t,
     if (f.is<rs2::depth_frame>())
     {
         image = fix_depth_scale(image, _depth_scaled_image[stream]);
+	bpp = sizeof(float);
     }
 
     ++(seq[stream]);
