@@ -486,6 +486,17 @@ void BaseRealSenseNode::registerDynamicOption(ros::NodeHandle& nh, rs2::options 
     _ddynrec.push_back(ddynrec);
 }
 
+void BaseRealSenseNode::registerDynamicStreamingCb(ros::NodeHandle& nh)
+{
+    std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
+    ddynrec->registerVariable<bool>("enable_streaming", true,
+				    [this](bool enabled)
+				    { toggleSensors(enabled); },
+				    "Enable/disable streaming for all sensors");
+    ddynrec->publishServicesTopics();
+    _ddynrec.push_back(ddynrec);
+}
+
 void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 {
     ROS_INFO("Setting Dynamic reconfig parameters.");
@@ -504,6 +515,9 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
         ROS_DEBUG_STREAM("module_name:" << module_name);
         registerDynamicOption(nh, sensor, module_name);
     }
+
+    registerDynamicStreamingCb(nh);
+    
     ROS_INFO("Done Setting Dynamic reconfig parameters.");
 }
 
