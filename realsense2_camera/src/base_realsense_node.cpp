@@ -488,8 +488,11 @@ void BaseRealSenseNode::registerDynamicOption(ros::NodeHandle& nh, rs2::options 
 
 void BaseRealSenseNode::registerDynamicStreamingCb(ros::NodeHandle& nh)
 {
+    bool	enable_streaming;
+    _pnh.param("enable_streaming", enable_streaming, true);
+    
     std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
-    ddynrec->registerVariable<bool>("enable_streaming", true,
+    ddynrec->registerVariable<bool>("enable_streaming", enable_streaming,
 				    [this](bool enabled)
 				    { toggleSensors(enabled); },
 				    "Enable/disable streaming for all sensors");
@@ -789,20 +792,20 @@ void BaseRealSenseNode::setupPublishers()
     {
         if (_enable[stream])
         {
-            std::stringstream image_raw, camera_info;
-            bool rectified_image = false;
-            if (stream == DEPTH || stream == INFRA1 || stream == INFRA2)
-                rectified_image = true;
+	    std::stringstream image_raw, camera_info;
+	    bool rectified_image = false;
+	    if (stream == DEPTH || stream == INFRA1 || stream == INFRA2)
+		rectified_image = true;
 
-            std::string stream_name(STREAM_NAME(stream));
-            image_raw << stream_name << "/image_" << ((rectified_image)?"rect_":"") << "raw";
-            camera_info << stream_name << "/camera_info";
+	    std::string stream_name(STREAM_NAME(stream));
+	    image_raw << stream_name << "/image_" << ((rectified_image)?"rect_":"") << "raw";
+	    camera_info << stream_name << "/camera_info";
 
-            std::shared_ptr<FrequencyDiagnostics> frequency_diagnostics(new FrequencyDiagnostics(_fps[stream], stream_name, _serial_no));
-            _image_publishers[stream] = {image_transport.advertise(image_raw.str(), 1), frequency_diagnostics};
-            _info_publisher[stream] = _node_handle.advertise<sensor_msgs::CameraInfo>(camera_info.str(), 1);
+	    std::shared_ptr<FrequencyDiagnostics> frequency_diagnostics(new FrequencyDiagnostics(_fps[stream], stream_name, _serial_no));
+	    _image_publishers[stream] = {image_transport.advertise(image_raw.str(), 1), frequency_diagnostics};
+	    _info_publisher[stream] = _node_handle.advertise<sensor_msgs::CameraInfo>(camera_info.str(), 1);
 
-            if (_align_depth && (stream != DEPTH) && stream.second < 2)
+	    if (_align_depth && (stream != DEPTH) && stream.second < 2)
             {
                 std::stringstream aligned_image_raw, aligned_camera_info;
                 aligned_image_raw << "aligned_depth_to_" << stream_name << "/image_raw";
@@ -1573,14 +1576,18 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
                     }
                     continue;
                 }
-                stream_index_pair sip{stream_type,stream_index};
-                publishFrame(f, t,
-                                sip,
-                                _image,
-                                _info_publisher,
-                                _image_publishers, _seq,
-                                _camera_info, _optical_frame_id,
-                                _encoding);
+
+		if (!_align_depth || !f.is<rs2::depth_frame>())
+		{
+		    stream_index_pair sip{stream_type,stream_index};
+		    publishFrame(f, t,
+				 sip,
+				 _image,
+				 _info_publisher,
+				 _image_publishers, _seq,
+				 _camera_info, _optical_frame_id,
+				 _encoding);
+		}
             }
 
             if (_align_depth && is_depth_arrived)
@@ -1650,6 +1657,10 @@ void BaseRealSenseNode::setBaseTime(double frame_time, bool warn_no_metadata)
 void BaseRealSenseNode::setupStreams()
 {
 	ROS_INFO("setupStreams...");
+
+	bool	enable_streaming;
+	_pnh.param("enable_streaming", enable_streaming, true);
+	
     try{
 		// Publish image stream info
         for (auto& profiles : _enabled_profiles)
@@ -1683,8 +1694,10 @@ void BaseRealSenseNode::setupStreams()
             std::string module_name = sensor_profile.first;
             rs2::sensor sensor = active_sensors[module_name];
             sensor.open(sensor_profile.second);
-            sensor.start(_sensors_callback[module_name]);
-            if (sensor.is<rs2::depth_sensor>())
+	    sensor.start(_sensors_callback[module_name]);
+	    if (!enable_streaming)
+                sensor.stop();
+	    if (sensor.is<rs2::depth_sensor>())
             {
                 _depth_scale_meters = sensor.as<rs2::depth_sensor>().get_depth_scale();
             }
