@@ -231,6 +231,7 @@ namespace realsense2_camera
         void multiple_message_callback(rs2::frame frame, imu_sync_method sync_method);
         void frame_callback(rs2::frame frame);
         void registerDynamicOption(ros::NodeHandle& nh, rs2::options sensor, std::string& module_name);
+	void registerDynamicStreamingCb(ros::NodeHandle& nh);
         void readAndSetDynamicParam(ros::NodeHandle& nh1, std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddynrec, const std::string option_name, const int min_val, const int max_val, rs2::sensor sensor, int* option_value);
         void registerAutoExposureROIOptions(ros::NodeHandle& nh);
         void set_auto_exposure_roi(const std::string option_name, rs2::sensor sensor, int new_value);
@@ -316,6 +317,9 @@ namespace realsense2_camera
 
         stream_index_pair _base_stream;
         const std::string _namespace;
+
+        sensor_msgs::PointCloud2 _msg_pointcloud;
+        std::vector< unsigned int > _valid_pc_indices;
 
     };//end class
 
