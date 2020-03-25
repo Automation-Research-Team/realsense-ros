@@ -380,7 +380,7 @@ void BaseRealSenseNode::registerAutoExposureROIOptions(ros::NodeHandle& nh)
     }
 }
 
-void BaseRealSenseNode::registerDynamicOption(ros::NodeHandle& nh, rs2::options sensor, std::string& module_name, rs2::sensor* sens)
+void BaseRealSenseNode::registerDynamicOption(ros::NodeHandle& nh, rs2::options sensor, std::string& module_name)
 {
     ros::NodeHandle nh1(nh, module_name);
     std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh1);
@@ -481,24 +481,6 @@ void BaseRealSenseNode::registerDynamicOption(ros::NodeHandle& nh, rs2::options 
                 sensor.get_option_description(option), enum_dict);
         }
     }
-
-    if (sens)
-    {
-	bool	enable_streaming;
-	_pnh.param("enable_streaming", enable_streaming, true);
-
-	ddynrec->registerVariable<bool>(
-	    "enable_streaming", enable_streaming,
-	    [this, sens, module_name](bool enabled)
-	    {
-		if (enabled)
-		    sens->start(_sensors_callback[module_name]);
-		else
-		    sens->stop();
-	    },
-	    "Enable/disable streaming");
-    }
-    
     ddynrec->publishServicesTopics();
     _ddynrec.push_back(ddynrec);
 }
@@ -507,11 +489,22 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 {
     ROS_INFO("Setting Dynamic reconfig parameters.");
 
+    bool	enable_streaming;
+    _pnh.param("enable_streaming", enable_streaming, true);
+
+    auto ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
+    ddynrec->registerVariable<bool>("enable_streaming", enable_streaming,
+				    [this](bool enabled)
+				    { toggleSensors(enabled); },
+				    "Enable/disable streaming for all sensors");
+    ddynrec->publishServicesTopics();
+    _ddynrec.push_back(ddynrec);
+
     for(rs2::sensor sensor : _dev_sensors)
     {
         std::string module_name = create_graph_resource_name(sensor.get_info(RS2_CAMERA_INFO_NAME));
         ROS_DEBUG_STREAM("module_name:" << module_name);
-        registerDynamicOption(nh, sensor, module_name, &sensor);
+        registerDynamicOption(nh, sensor, module_name);
     }
 
     for (NamedFilter nfilter : _filters)
@@ -1571,14 +1564,17 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
                     continue;
                 }
 
-		stream_index_pair sip{stream_type,stream_index};
-		publishFrame(f, t,
-			     sip,
-			     _image,
-			     _info_publisher,
-			     _image_publishers, _seq,
-			     _camera_info, _optical_frame_id,
-			     _encoding);
+		if (!_align_depth || !f.is<rs2::depth_frame>())
+		{
+		    stream_index_pair sip{stream_type,stream_index};
+		    publishFrame(f, t,
+				 sip,
+				 _image,
+				 _info_publisher,
+				 _image_publishers, _seq,
+				 _camera_info, _optical_frame_id,
+				 _encoding);
+		}
             }
 
             if (_align_depth && is_depth_arrived)
@@ -1647,7 +1643,7 @@ void BaseRealSenseNode::setBaseTime(double frame_time, bool warn_no_metadata)
 
 void BaseRealSenseNode::setupStreams()
 {
-    ROS_INFO("setupStreams...");
+	ROS_INFO("setupStreams...");
 
     try{
 		// Publish image stream info
@@ -1684,8 +1680,9 @@ void BaseRealSenseNode::setupStreams()
             std::string module_name = sensor_profile.first;
             rs2::sensor sensor = active_sensors[module_name];
             sensor.open(sensor_profile.second);
-	    if (enable_streaming)
-		sensor.start(_sensors_callback[module_name]);
+	    sensor.start(_sensors_callback[module_name]);
+	    if (!enable_streaming)
+                sensor.stop();
 	    if (sensor.is<rs2::depth_sensor>())
             {
                 _depth_scale_meters = sensor.as<rs2::depth_sensor>().get_depth_scale();
