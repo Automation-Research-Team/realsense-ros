@@ -80,7 +80,7 @@ namespace realsense2_camera
 
 	class PipelineSyncer : public rs2::asynchronous_syncer
 	{
-	public: 
+	public:
 		void operator()(rs2::frame f) const
 		{
 			invoke(std::move(f));
@@ -98,7 +98,7 @@ namespace realsense2_camera
             void Publish(sensor_msgs::Imu msg);     //either send or hold message.
             uint32_t getNumSubscribers() { return _publisher.getNumSubscribers();};
             void Enable(bool is_enabled) {_is_enabled=is_enabled;};
-        
+
         private:
             void PublishPendingMessages();
 
@@ -231,7 +231,6 @@ namespace realsense2_camera
         void multiple_message_callback(rs2::frame frame, imu_sync_method sync_method);
         void frame_callback(rs2::frame frame);
         void registerDynamicOption(ros::NodeHandle& nh, rs2::options sensor, std::string& module_name);
-	void registerDynamicStreamingCb(ros::NodeHandle& nh);
         void readAndSetDynamicParam(ros::NodeHandle& nh1, std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddynrec, const std::string option_name, const int min_val, const int max_val, rs2::sensor sensor, int* option_value);
         void registerAutoExposureROIOptions(ros::NodeHandle& nh);
         void set_auto_exposure_roi(const std::string option_name, rs2::sensor sensor, int new_value);
@@ -324,4 +323,3 @@ namespace realsense2_camera
     };//end class
 
 }
-

@@ -485,23 +485,20 @@ void BaseRealSenseNode::registerDynamicOption(ros::NodeHandle& nh, rs2::options 
     _ddynrec.push_back(ddynrec);
 }
 
-void BaseRealSenseNode::registerDynamicStreamingCb(ros::NodeHandle& nh)
+void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 {
+    ROS_INFO("Setting Dynamic reconfig parameters.");
+
     bool	enable_streaming;
     _pnh.param("enable_streaming", enable_streaming, true);
-    
-    std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
+
+    auto ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
     ddynrec->registerVariable<bool>("enable_streaming", enable_streaming,
 				    [this](bool enabled)
 				    { toggleSensors(enabled); },
 				    "Enable/disable streaming for all sensors");
     ddynrec->publishServicesTopics();
     _ddynrec.push_back(ddynrec);
-}
-
-void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
-{
-    ROS_INFO("Setting Dynamic reconfig parameters.");
 
     for(rs2::sensor sensor : _dev_sensors)
     {
@@ -518,8 +515,6 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
         registerDynamicOption(nh, sensor, module_name);
     }
 
-    registerDynamicStreamingCb(nh);
-    
     ROS_INFO("Done Setting Dynamic reconfig parameters.");
 }
 
@@ -1650,9 +1645,6 @@ void BaseRealSenseNode::setupStreams()
 {
 	ROS_INFO("setupStreams...");
 
-	bool	enable_streaming;
-	_pnh.param("enable_streaming", enable_streaming, true);
-	
     try{
 		// Publish image stream info
         for (auto& profiles : _enabled_profiles)
@@ -1681,6 +1673,8 @@ void BaseRealSenseNode::setupStreams()
             active_sensors[module_name] = _sensors[profile.first];
         }
 
+	bool	enable_streaming;
+	_pnh.param("enable_streaming", enable_streaming, true);
         for (const std::pair<std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
         {
             std::string module_name = sensor_profile.first;
@@ -2026,7 +2020,7 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
     _msg_pointcloud.is_dense = true;
 
     sensor_msgs::PointCloud2Modifier modifier(_msg_pointcloud);
-    modifier.setPointCloud2FieldsByString(1, "xyz");    
+    modifier.setPointCloud2FieldsByString(1, "xyz");
 
     vertex = pc.get_vertices();
     if (use_texture)
