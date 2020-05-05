@@ -151,6 +151,7 @@ void BaseRealSenseNode::toggleSensors(bool enabled)
                 sens.start(_syncer);
             else
                 sens.stop();
+	    ros::Duration(0.1).sleep();
         }
         catch(const rs2::wrong_api_call_sequence_error& ex)
         {
@@ -1643,7 +1644,7 @@ void BaseRealSenseNode::setBaseTime(double frame_time, bool warn_no_metadata)
 
 void BaseRealSenseNode::setupStreams()
 {
-	ROS_INFO("setupStreams...");
+    ROS_INFO("setupStreams...");
 
     try{
 		// Publish image stream info
