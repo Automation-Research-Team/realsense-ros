@@ -87,6 +87,7 @@ BaseRealSenseNode::BaseRealSenseNode(ros::NodeHandle& nodeHandle,
     _is_running(true), _base_frame_id(""),  _node_handle(nodeHandle),
     _pnh(privateNodeHandle), _dev(dev), _json_file_path(""),
     _serial_no(serial_no),
+    _depth_multiplier(1.0),
     _is_initialized_time_base(false),
     _namespace(getNamespaceStr())
 {
@@ -606,6 +607,12 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 				    [this](bool enabled)
 				    { toggleSensors(enabled); },
 				    "Enable/disable streaming for all sensors");
+
+    _pnh.param("depth_multiplier", _depth_multiplier, 1.0);
+    ddynrec->registerVariable<double>("depth_multiplier", &_depth_multiplier,
+				      "Adjust scale multiplier of dpeth",
+				      0.8, 1.2);
+	
     ddynrec->publishServicesTopics();
     _ddynrec.push_back(ddynrec);
 
@@ -1322,7 +1329,7 @@ cv::Mat& BaseRealSenseNode::fix_depth_scale(const cv::Mat& from_image, cv::Mat& 
         p_to = to_image.ptr<float>(i);
         for ( j = 0; j < nCols; ++j)
         {
-            p_to[j] = p_from[j] * _depth_scale_meters;
+            p_to[j] = p_from[j] * _depth_scale_meters * _depth_multiplier;
         }
     }
     return to_image;

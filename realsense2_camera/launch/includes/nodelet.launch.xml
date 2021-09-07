@@ -106,6 +106,7 @@
   <arg name="initial_reset"            default="false"/>
   <arg name="unite_imu_method"         default="none"/> <!-- Options are: [none, copy, linear_interpolation] -->
   <arg name="enable_streaming"	       default="true"/>
+  <arg name="depth_multiplier"	       default="1.0"/>
 
   <node unless="$(arg external_manager)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="$(arg output)" required="$(arg required)" respawn="$(arg respawn)"/>
   <node pkg="nodelet" type="nodelet" name="realsense2_camera" args="load realsense2_camera/RealSenseNodeFactory $(arg manager)" required="$(arg required)" respawn="$(arg respawn)">
@@ -210,5 +211,6 @@
     <param name="unite_imu_method"         type="str"    value="$(arg unite_imu_method)"/>
     <param name="allow_no_texture_points"  type="bool"   value="$(arg allow_no_texture_points)"/>
     <param name="enable_streaming"         type="bool"   value="$(arg enable_streaming)"/>
+    <param name="depth_multiplier"         type="double" value="$(arg depth_multiplier)"/>
   </node>
 </launch>

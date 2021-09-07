@@ -255,6 +255,7 @@ namespace realsense2_camera
         std::string _json_file_path;
         std::string _serial_no;
         float _depth_scale_meters;
+	double _depth_multiplier;
         float _clipping_distance;
         bool _allow_no_texture_points;
         bool _ordered_pc;
