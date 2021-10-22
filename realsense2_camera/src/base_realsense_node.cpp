@@ -612,7 +612,7 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
     ddynrec->registerVariable<double>("depth_multiplier", &_depth_multiplier,
 				      "Adjust scale multiplier of dpeth",
 				      0.8, 1.2);
-	
+
     ddynrec->publishServicesTopics();
     _ddynrec.push_back(ddynrec);
 
@@ -2188,7 +2188,7 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
     {
         std::set<rs2_format> available_formats{ rs2_format::RS2_FORMAT_RGB8, rs2_format::RS2_FORMAT_Y8 };
 
-        texture_frame_itr = find_if(frameset.begin(), frameset.end(), [&texture_source_id, &available_formats] (rs2::frame f)
+        texture_frame_itr = std::find_if(frameset.begin(), frameset.end(), [&texture_source_id, &available_formats] (rs2::frame f)
                                 {return (rs2_stream(f.get_profile().stream_type()) == texture_source_id) &&
                                             (available_formats.find(f.get_profile().format()) != available_formats.end()); });
         if (texture_frame_itr == frameset.end())
