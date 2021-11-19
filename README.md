@@ -5,7 +5,7 @@ This version supports Kinetic, Melodic and Noetic distributions.
 
 For running in ROS2 environment please switch to the [ros2 branch](https://github.com/IntelRealSense/realsense-ros/tree/ros2). </br>
 
-LibRealSense2 supported version: v2.48.0 (see [realsense2_camera release notes](https://github.com/IntelRealSense/realsense-ros/releases))
+LibRealSense2 supported version: v2.50.0 (see [realsense2_camera release notes](https://github.com/IntelRealSense/realsense-ros/releases))
 
 ## Installation Instructions
 
@@ -59,7 +59,7 @@ LibRealSense2 supported version: v2.48.0 (see [realsense2_camera release notes](
         `vcpkg install realsense2:x64-windows` 
 
    #### OR
-   - #### Build from sources by downloading the latest [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense/releases/tag/v2.48.0) and follow the instructions under [Linux Installation](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md)
+   - #### Build from sources by downloading the latest [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense/releases/tag/v2.50.0) and follow the instructions under [Linux Installation](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md)
 
 
    ### Step 2: Install Intel&reg; RealSense&trade; ROS from Sources
@@ -123,8 +123,10 @@ The published topics differ according to the device and parameters.
 After running the above command with D435i attached, the following list of topics will be available (This is a partial list. For full one type `rostopic list`):
 - /camera/color/camera_info
 - /camera/color/image_raw
+- /camera/color/metadata
 - /camera/depth/camera_info
 - /camera/depth/image_rect_raw
+- /camera/depth/metadata
 - /camera/extrinsics/depth_to_color
 - /camera/extrinsics/depth_to_infra1
 - /camera/extrinsics/depth_to_infra2
@@ -133,8 +135,10 @@ After running the above command with D435i attached, the following list of topic
 - /camera/infra2/camera_info
 - /camera/infra2/image_rect_raw
 - /camera/gyro/imu_info
+- /camera/gyro/metadata
 - /camera/gyro/sample
 - /camera/accel/imu_info
+- /camera/accel/metadata
 - /camera/accel/sample
 - /diagnostics
 
@@ -149,10 +153,6 @@ After running the above command with D435i attached, the following list of topic
 
 The "/camera" prefix is the default and can be changed. Check the rs_multiple_devices.launch file for an example.
 If using D435 or D415, the gyro and accel topics wont be available. Likewise, other topics will be available when using T265 (see below).
-
-### Available services:
-- reset : Cause a hardware reset of the device. Usage: `rosservice call /camera/realsense2_camera/reset`
-- enable : Start/Stop all streaming sensors. Usage example: `rosservice call /camera/enable False"`
 
 ### Launch parameters
 The following parameters are available by the wrapper:
@@ -206,6 +206,10 @@ Setting *unite_imu_method* creates a new topic, *imu*, that replaces the default
   - **NOTE** To enable the Infrared stream, you should enable `enable_infra:=true` NOT `enable_infra1:=true` nor `enable_infra2:=true`
   - **NOTE** This feature is only supported by Realsense sensors with RGB streams available from the `infra` cameras, which can be checked by observing the output of `rs-enumerate-devices`
 
+### Available services:
+- reset : Cause a hardware reset of the device. Usage: `rosservice call /camera/realsense2_camera/reset`
+- enable : Start/Stop all streaming sensors. Usage example: `rosservice call /camera/enable False"`
+- device_info : retrieve information about the device - serial_number, firmware_version etc. Type `osservice type /camera/realsense2_camera/device_info | rossrv show` for the full list. Call example: `rosservice call /camera/realsense2_camera/device_info`
 
 ### Point Cloud
 Here is an example of how to start the camera node and make it publish the point cloud using the pointcloud option.
