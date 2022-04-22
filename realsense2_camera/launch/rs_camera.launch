@@ -65,7 +65,6 @@
   <arg name="topic_odom_in"             default="odom_in"/>
   <arg name="calib_odom_file"           default=""/>
   <arg name="publish_odom_tf"           default="true"/>
-  <arg name="enable_streaming"	        default="true"/>
   <arg name="depth_multiplier"	        default="1.0"/>
   <arg name="stereo_module/exposure/1"  default="7500"/>
   <arg name="stereo_module/gain/1"      default="16"/>
@@ -142,7 +141,6 @@
       <arg name="stereo_module/gain/2"     value="$(arg stereo_module/gain/2)"/>
 
       <arg name="allow_no_texture_points"  value="$(arg allow_no_texture_points)"/>
-      <arg name="enable_streaming"	   value="$(arg enable_streaming)"/>
       <arg name="depth_multiplier"	   value="$(arg depth_multiplier)"/>
       <arg name="ordered_pc"               value="$(arg ordered_pc)"/>
     </include>

@@ -600,15 +600,7 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 {
     ROS_INFO("Setting Dynamic reconfig parameters.");
 
-    bool	enable_streaming;
-    _pnh.param("enable_streaming", enable_streaming, true);
-
     auto ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
-    ddynrec->registerVariable<bool>("enable_streaming", enable_streaming,
-				    [this](bool enabled)
-				    { toggleSensors(enabled); },
-				    "Enable/disable streaming for all sensors");
-
     _pnh.param("depth_multiplier", _depth_multiplier, 1.0);
     ddynrec->registerVariable<double>("depth_multiplier", &_depth_multiplier,
 				      "Adjust scale multiplier of dpeth",
@@ -1876,16 +1868,12 @@ void BaseRealSenseNode::setupStreams()
             active_sensors[module_name] = _sensors[profile.first];
         }
 
-	bool	enable_streaming;
-	_pnh.param("enable_streaming", enable_streaming, true);
         for (const std::pair<std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
         {
             std::string module_name = sensor_profile.first;
             rs2::sensor sensor = active_sensors[module_name];
             sensor.open(sensor_profile.second);
 	    sensor.start(_sensors_callback[module_name]);
-	    if (!enable_streaming)
-                sensor.stop();
 	    if (sensor.is<rs2::depth_sensor>())
             {
                 _depth_scale_meters = sensor.as<rs2::depth_sensor>().get_depth_scale();
