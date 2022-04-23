@@ -1,0 +1,22 @@
+<launch>
+
+  <arg name="config_file"	default="$(dirname)/../config/default.yaml"/>
+  <arg name="tf_prefix"		default=""/>
+
+  <arg name="external_manager"	default="false"/>
+  <arg name="manager"		default="realsense2_camera_manager"/>
+  <arg name="output"		default="screen"/>  <!-- [ screen | log ]-->
+  <arg name="required"		default="false"/>
+  <arg name="respawn"		default="false"/>
+
+  <node unless="$(arg external_manager)"
+	name="$(arg manager)" pkg="nodelet" type="nodelet"
+	args="manager" output="$(arg output)" required="$(arg required)"
+	respawn="$(arg respawn)"/>
+  <node name="realsense2_camera" pkg="nodelet" type="nodelet"
+	args="load realsense2_camera/RealSenseNodeFactory $(arg manager)"
+	required="$(arg required)" respawn="$(arg respawn)">
+    <rosparam file="$(arg config_file)" subst_value="true"/>
+  </node>
+
+</launch>
