@@ -70,34 +70,3 @@ stereo_module:
   gain:
     "1": 16
     "2": 16
-
-base_frame_id: $(arg tf_prefix)_link
-depth_frame_id: $(arg tf_prefix)_depth_frame
-infra1_frame_id: $(arg tf_prefix)_infra1_frame
-infra2_frame_id: $(arg tf_prefix)_infra2_frame
-color_frame_id: $(arg tf_prefix)_color_frame
-fisheye_frame_id: $(arg tf_prefix)_fisheye_frame
-fisheye1_frame_id: $(arg tf_prefix)_fisheye1_frame
-fisheye2_frame_id: $(arg tf_prefix)_fisheye2_frame
-accel_frame_id: $(arg tf_prefix)_accel_optical_frame
-gyro_frame_id: $(arg tf_prefix)_gyro_frame
-pose_frame_id: $(arg tf_prefix)_pose_frame
-odom_frame_id: $(arg tf_prefix)_odom_frame
-
-depth_optical_frame_id: $(arg tf_prefix)_depth_optical_frame
-infra1_optical_frame_id: $(arg tf_prefix)_infra1_optical_frame
-infra2_optical_frame_id: $(arg tf_prefix)_infra2_optical_frame
-color_optical_frame_id: $(arg tf_prefix)_color_optical_frame
-fisheye_optical_frame_id: $(arg tf_prefix)_fisheye_optical_frame
-fisheye1_optical_frame_id: $(arg tf_prefix)_fisheye1_optical_frame
-fisheye2_optical_frame_id: $(arg tf_prefix)_fisheye2_optical_frame
-accel_optical_frame_id: $(arg tf_prefix)_accel_optical_frame
-gyro_optical_frame_id: $(arg tf_prefix)_gyro_optical_frame
-imu_optical_frame_id: $(arg tf_prefix)_imu_optical_frame
-pose_optical_frame_id: $(arg tf_prefix)_pose_optical_frame
-aligned_depth_to_color_frame_id: $(arg tf_prefix)_aligned_depth_to_color_frame
-aligned_depth_to_infra1_frame_id: $(arg tf_prefix)_aligned_depth_to_infra1_frame
-aligned_depth_to_infra2_frame_id: $(arg tf_prefix)_aligned_depth_to_infra2_frame
-aligned_depth_to_fisheye_frame_id: $(arg tf_prefix)_aligned_depth_to_fisheye_frame
-aligned_depth_to_fisheye1_frame_id: $(arg tf_prefix)_aligned_depth_to_fisheye1_frame
-aligned_depth_to_fisheye2_frame_id: $(arg tf_prefix)_aligned_depth_to_fisheye2_frame
