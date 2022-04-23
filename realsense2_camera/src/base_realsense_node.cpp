@@ -2256,11 +2256,12 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
         float color_pixel[2];
         for (size_t point_idx=0; point_idx < pc.size(); point_idx++, vertex++, color_point++)
         {
-            float i(color_point->u);
-            float j(color_point->v);
-            bool valid_color_pixel(i >= 0.f && i <=1.f && j >= 0.f && j <=1.f);
-            bool valid_pixel(vertex->z > 0 && (valid_color_pixel || _allow_no_texture_points));
-            if (valid_pixel || _ordered_pc)
+	    float i(color_point->u);
+	    float j(color_point->v);
+	    bool valid_color_pixel(vertex->z > 0 &&
+				   i >= 0.f && i <=1.f && j >= 0.f && j <=1.f);
+	    bool valid_pixel(vertex->z > 0 && (valid_color_pixel || _allow_no_texture_points));
+	    if (valid_pixel || _ordered_pc)
             {
                 *iter_x = vertex->x;
                 *iter_y = vertex->y;
@@ -2275,6 +2276,10 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
                     int offset = (pixy * texture_width + pixx) * num_colors;
                     reverse_memcpy(&(*iter_color), color_data+offset, num_colors);  // PointCloud2 order of rgb is bgr.
                 }
+		else	// no texture point
+		{
+		    std::fill_n(&(*iter_color), num_colors, 0);
+		}
                 ++iter_x; ++iter_y; ++iter_z;
                 ++iter_color;
                 ++valid_count;
