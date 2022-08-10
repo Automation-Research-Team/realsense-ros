@@ -87,7 +87,9 @@ BaseRealSenseNode::BaseRealSenseNode(ros::NodeHandle& nodeHandle,
     _is_running(true), _base_frame_id(""),  _node_handle(nodeHandle),
     _pnh(privateNodeHandle), _dev(dev), _json_file_path(""),
     _serial_no(serial_no),
+    _enable_streaming(true),
     _depth_multiplier(1.0),
+    _depth_offset(0.0),
     _is_initialized_time_base(false),
     _namespace(getNamespaceStr())
 {
@@ -600,19 +602,21 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 {
     ROS_INFO("Setting Dynamic reconfig parameters.");
 
-    bool	enable_streaming;
-    _pnh.param("enable_streaming", enable_streaming, true);
 
     auto ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
-    ddynrec->registerVariable<bool>("enable_streaming", enable_streaming,
+    _pnh.param("enable_streaming", _enable_streaming, true);
+    ddynrec->registerVariable<bool>("enable_streaming", _enable_streaming,
 				    [this](bool enabled)
 				    { toggleSensors(enabled); },
 				    "Enable/disable streaming for all sensors");
-
     _pnh.param("depth_multiplier", _depth_multiplier, 1.0);
     ddynrec->registerVariable<double>("depth_multiplier", &_depth_multiplier,
 				      "Adjust scale multiplier of dpeth",
 				      0.8, 1.2);
+    _pnh.param("depth_offset", _depth_offset, 0.0);
+    ddynrec->registerVariable<double>("depth_offset", &_depth_offset,
+				      "Adjust offset of dpeth",
+				      -0.05, 0.05);
 
     ddynrec->publishServicesTopics();
     _ddynrec.push_back(ddynrec);
@@ -1335,7 +1339,8 @@ cv::Mat& BaseRealSenseNode::fix_depth_scale(const cv::Mat& from_image, cv::Mat& 
         p_to = to_image.ptr<float>(i);
         for ( j = 0; j < nCols; ++j)
         {
-            p_to[j] = p_from[j] * _depth_scale_meters * _depth_multiplier;
+            p_to[j] = p_from[j] * _depth_scale_meters * _depth_multiplier
+		    + _depth_offset;
         }
     }
     return to_image;
@@ -1876,15 +1881,13 @@ void BaseRealSenseNode::setupStreams()
             active_sensors[module_name] = _sensors[profile.first];
         }
 
-	bool	enable_streaming;
-	_pnh.param("enable_streaming", enable_streaming, true);
         for (const std::pair<std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
         {
             std::string module_name = sensor_profile.first;
             rs2::sensor sensor = active_sensors[module_name];
             sensor.open(sensor_profile.second);
 	    sensor.start(_sensors_callback[module_name]);
-	    if (!enable_streaming)
+	    if (!_enable_streaming)
                 sensor.stop();
 	    if (sensor.is<rs2::depth_sensor>())
             {

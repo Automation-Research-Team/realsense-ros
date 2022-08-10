@@ -67,6 +67,7 @@
   <arg name="publish_odom_tf"           default="true"/>
   <arg name="enable_streaming"	        default="true"/>
   <arg name="depth_multiplier"	        default="1.0"/>
+  <arg name="depth_offset"	        default="0.0"/>
   <arg name="stereo_module/exposure/1"  default="7500"/>
   <arg name="stereo_module/gain/1"      default="16"/>
   <arg name="stereo_module/exposure/2"  default="1"/>
@@ -144,6 +145,7 @@
       <arg name="allow_no_texture_points"  value="$(arg allow_no_texture_points)"/>
       <arg name="enable_streaming"	   value="$(arg enable_streaming)"/>
       <arg name="depth_multiplier"	   value="$(arg depth_multiplier)"/>
+      <arg name="depth_offset"		   value="$(arg depth_offset)"/>
       <arg name="ordered_pc"               value="$(arg ordered_pc)"/>
     </include>
   </group>
