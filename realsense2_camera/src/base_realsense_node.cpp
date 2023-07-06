@@ -87,7 +87,6 @@ BaseRealSenseNode::BaseRealSenseNode(ros::NodeHandle& nodeHandle,
     _is_running(true), _base_frame_id(""),  _node_handle(nodeHandle),
     _pnh(privateNodeHandle), _dev(dev), _json_file_path(""),
     _serial_no(serial_no),
-    _enable_streaming(true),
     _depth_multiplier(1.0),
     _depth_offset(0.0),
     _is_initialized_time_base(false),
@@ -229,7 +228,7 @@ void BaseRealSenseNode::setupErrorCallback()
             {
                 ROS_WARN_STREAM("Hardware Notification:" << n.get_description() << "," << n.get_timestamp() << "," << n.get_severity() << "," << n.get_category());
             }
-            if (error_strings.end() != std::find_if(error_strings.begin(), error_strings.end(), [&n] (std::string err) 
+            if (error_strings.end() != std::find_if(error_strings.begin(), error_strings.end(), [&n] (std::string err)
                                         {return (n.get_description().find(err) != std::string::npos); }))
             {
                 ROS_ERROR_STREAM("Performing Hardware Reset.");
@@ -604,11 +603,6 @@ void BaseRealSenseNode::registerDynamicReconfigCb(ros::NodeHandle& nh)
 
 
     auto ddynrec = std::make_shared<ddynamic_reconfigure::DDynamicReconfigure>(nh);
-    _pnh.param("enable_streaming", _enable_streaming, true);
-    ddynrec->registerVariable<bool>("enable_streaming", _enable_streaming,
-				    [this](bool enabled)
-				    { toggleSensors(enabled); },
-				    "Enable/disable streaming for all sensors");
     _pnh.param("depth_multiplier", _depth_multiplier, 1.0);
     ddynrec->registerVariable<double>("depth_multiplier", &_depth_multiplier,
 				      "Adjust scale multiplier of dpeth",
@@ -1887,8 +1881,6 @@ void BaseRealSenseNode::setupStreams()
             rs2::sensor sensor = active_sensors[module_name];
             sensor.open(sensor_profile.second);
 	    sensor.start(_sensors_callback[module_name]);
-	    if (!_enable_streaming)
-                sensor.stop();
 	    if (sensor.is<rs2::depth_sensor>())
             {
                 _depth_scale_meters = sensor.as<rs2::depth_sensor>().get_depth_scale();
@@ -2469,7 +2461,7 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const ros::Time& t,
 
 void BaseRealSenseNode::publishMetadata(rs2::frame f, const ros::Time& header_time, const std::string& frame_id)
 {
-    stream_index_pair stream = {f.get_profile().stream_type(), f.get_profile().stream_index()};    
+    stream_index_pair stream = {f.get_profile().stream_type(), f.get_profile().stream_index()};
     if (_metadata_publishers.find(stream) != _metadata_publishers.end())
     {
         auto& md_publisher = _metadata_publishers.at(stream);
