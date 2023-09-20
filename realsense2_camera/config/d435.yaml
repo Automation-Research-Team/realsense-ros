@@ -1,0 +1,73 @@
+serial_no: ""
+usb_port_id: ""
+device_type: ""
+json_file_path: ""
+rosbag_filename: ""
+
+fisheye_width: -1
+fisheye_height: -1
+enable_fisheye: false
+enable_fisheye1: false
+enable_fisheye2: false
+
+depth_width: 848
+depth_height: 480
+enable_depth: true
+
+confidence_width: -1
+confidence_height: -1
+enable_confidence: true
+confidence_fps: -1
+
+infra_width: 848
+infra_height: 480
+enable_infra: false
+enable_infra1: false
+enable_infra2: false
+infra_rgb: false
+
+color_width: 848
+color_height: 480
+enable_color: true
+
+fisheye_fps: -1
+depth_fps: 60
+infra_fps: 60
+color_fps: 60
+gyro_fps: -1
+accel_fps: -1
+enable_gyro: false
+enable_accel: false
+enable_pose: false
+
+enable_pointcloud: false
+pointcloud_texture_stream: RS2_STREAM_COLOR  # RS2_STREAM_ANY
+pointcloud_texture_index: 0
+allow_no_texture_points: false
+ordered_pc: false
+
+enable_sync: true
+align_depth: true
+
+publish_tf: true
+tf_publish_rate: 0  # 0 - static transform
+
+filters: ""
+clip_distance: -2
+linear_accel_cov: 0.01
+initial_reset: false
+reconnect_timeout: 6.0
+wait_for_device_timeout: -1.0
+unite_imu_method: none  # Options are: [none, copy, linear_interpolation]
+topic_odom_in: odom_in
+calib_odom_file: ""
+publish_odom_tf: true
+depth_multiplier: 1.0
+depth_offset: 0.0
+stereo_module:
+  exposure:
+    "1": 7500
+    "2": 1
+  gain:
+    "1": 16
+    "2": 16
