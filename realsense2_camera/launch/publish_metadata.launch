@@ -1,0 +1,15 @@
+<launch>
+  <node name="publish_metadata"
+	pkg="realsense2_camera" type="publish_metadata.py"
+        output="screen" args="/camera/depth/metadata"/>
+
+  <arg name="plot_args"
+       value="/publish_metadata/delays/vector/x
+	      /publish_metadata/delays/vector/y
+	      /publish_metadata/delays/vector/z"/>
+
+  <node name="rqt_plot" pkg="rqt_plot" type="rqt_plot"
+	args="$(arg plot_args)"/>
+
+
+</launch>
