@@ -358,6 +358,8 @@ void RealSenseNodeFactory::startDevice()
     {
         switch(pid)
         {
+	case SR300_PID:
+        case SR300v2_PID:
         case RS400_PID:
         case RS405_PID:
         case RS410_PID:
@@ -377,7 +379,7 @@ void RealSenseNodeFactory::startDevice()
             _realSenseNode = std::unique_ptr<BaseRealSenseNode>(new BaseRealSenseNode(*this, _device, _parameters, this->get_node_options().use_intra_process_comms()));
             break;
         default:
-            ROS_FATAL_STREAM("Unsupported device!" << " Product ID: 0x" << pid_str);
+	    ROS_FATAL_STREAM("Unsupported device! Product ID: 0x" << pid_str);
             rclcpp::shutdown();
             exit(1);
         }
