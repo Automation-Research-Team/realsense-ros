@@ -11,17 +11,17 @@ enable_rgbd: false
 enable_sync: true
 
 pointcloud.enable: true
-pointcloud.ordered_pc: false
-#pointcloud.stream_filter: 2
+pointcloud.ordered_pc: true
+pointcloud.stream_filter: 2
 
-rgb_camera.color_profile: "640x480x60"
+rgb_camera.color_profile: "640x480x30"
 
 # D405, D435
-depth_module.depth_profile: "640x480x60"
+depth_module.depth_profile: "640x480x30"
 
 # SR305
-coded_light_depth_sensor.depth_profile: "640x480x60"
-coded_light_depth_sensor.infra_profile: "640x480x60"
+coded_light_depth_sensor.depth_profile: "640x480x30"
+coded_light_depth_sensor.infra_profile: "640x480x30"
 
 align_depth.enable: true
 
