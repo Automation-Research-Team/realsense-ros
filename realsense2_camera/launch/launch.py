@@ -86,6 +86,8 @@ def launch_setup(context, param_args):
                          package='rclcpp_components',
                          executable='component_container',
                          output=output,
+                         arguments=['--ros-args', '--log-level',
+                                    LaunchConfiguration('log_level')],
                          condition=UnlessCondition(
                              LaunchConfiguration('external_container'))),
                     LoadComposableNodes(

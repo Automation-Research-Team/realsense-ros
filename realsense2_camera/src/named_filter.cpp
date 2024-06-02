@@ -226,7 +226,8 @@ void PointcloudFilter::Publish(rs2::points pc, const rclcpp::Time& t, const rs2:
         {
             float i(color_point->u);
             float j(color_point->v);
-            bool valid_color_pixel(i >= 0.f && i <=1.f && j >= 0.f && j <=1.f);
+            bool valid_color_pixel(vertex->z > 0 &&
+				   i >= 0.f && i <=1.f && j >= 0.f && j <=1.f);
             bool valid_pixel(vertex->z > 0 && (valid_color_pixel || _allow_no_texture_points));
             if (valid_pixel || _ordered_pc)
             {
@@ -243,6 +244,10 @@ void PointcloudFilter::Publish(rs2::points pc, const rclcpp::Time& t, const rs2:
                     int offset = (pixy * texture_width + pixx) * num_colors;
                     reverse_memcpy(&(*iter_color), color_data+offset, num_colors);  // PointCloud2 order of rgb is bgr.
                 }
+		else
+		{
+		    std::fill_n(&(*iter_color), num_colors, 0);
+		}
                 ++iter_x; ++iter_y; ++iter_z;
                 ++iter_color;
                 ++valid_count;

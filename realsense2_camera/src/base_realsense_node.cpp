@@ -26,7 +26,7 @@
 
 using namespace realsense2_camera;
 
-SyncedImuPublisher::SyncedImuPublisher(rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_publisher, 
+SyncedImuPublisher::SyncedImuPublisher(rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_publisher,
                                        std::size_t waiting_list_size):
             _publisher(imu_publisher), _pause_mode(false),
             _waiting_list_size(waiting_list_size), _is_enabled(false)
@@ -83,7 +83,7 @@ void SyncedImuPublisher::PublishPendingMessages()
     }
 }
 size_t SyncedImuPublisher::getNumSubscribers()
-{ 
+{
     if (!_publisher) return 0;
     return _publisher->get_subscription_count();
 }
@@ -198,13 +198,15 @@ void BaseRealSenseNode::initializeFormatsMaps()
     _rs_format_to_cv_format[RS2_FORMAT_RAW8] = CV_8UC1;
     _rs_format_to_cv_format[RS2_FORMAT_RAW10] = CV_16UC1;
     _rs_format_to_cv_format[RS2_FORMAT_RAW16] = CV_16UC1;
+    _rs_format_to_cv_format[RS2_FORMAT_DISTANCE] = CV_32FC1;
 
     // from rs2_format to ROS2 image msg encoding (format)
     // http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Image.html
     // http://docs.ros.org/en/jade/api/sensor_msgs/html/image__encodings_8h_source.html
     _rs_format_to_ros_format[RS2_FORMAT_Y8] = sensor_msgs::image_encodings::MONO8;
     _rs_format_to_ros_format[RS2_FORMAT_Y16] = sensor_msgs::image_encodings::MONO16;
-    _rs_format_to_ros_format[RS2_FORMAT_Z16] = sensor_msgs::image_encodings::TYPE_16UC1;
+    // _rs_format_to_ros_format[RS2_FORMAT_Z16] = sensor_msgs::image_encodings::TYPE_16UC1;
+    _rs_format_to_ros_format[RS2_FORMAT_Z16] = sensor_msgs::image_encodings::TYPE_32FC1;
     _rs_format_to_ros_format[RS2_FORMAT_RGB8] = sensor_msgs::image_encodings::RGB8;
     _rs_format_to_ros_format[RS2_FORMAT_BGR8] = sensor_msgs::image_encodings::BGR8;
     _rs_format_to_ros_format[RS2_FORMAT_RGBA8] = sensor_msgs::image_encodings::RGBA8;
@@ -228,12 +230,12 @@ void BaseRealSenseNode::setupFilters()
     _filters.push_back(std::make_shared<NamedFilter>(std::make_shared<rs2::hole_filling_filter>(), _parameters, _logger));
     _filters.push_back(std::make_shared<NamedFilter>(std::make_shared<rs2::disparity_transform>(false), _parameters, _logger));
 
-    /* 
+    /*
     update_align_depth_func is being used in the align depth filter for triggiring the thread that monitors profile
     changes (_monitoring_pc) on every disable/enable of the align depth filter. This filter enablement/disablement affects
     several topics creation/destruction, therefore, refreshing the topics is required similarly to what is done when turning on/off a sensor.
     See BaseRealSenseNode::monitoringProfileChanges() as reference.
-    */ 
+    */
     std::function<void(const rclcpp::Parameter&)> update_align_depth_func = [this](const rclcpp::Parameter&){
         {
             std::lock_guard<std::mutex> lock_guard(_profile_changes_mutex);
@@ -243,7 +245,7 @@ void BaseRealSenseNode::setupFilters()
     };
 
 #if defined (ACCELERATE_GPU_WITH_GLSL)
-    _colorizer_filter = std::make_shared<NamedFilter>(std::make_shared<rs2::gl::colorizer>(), _parameters, _logger); 
+    _colorizer_filter = std::make_shared<NamedFilter>(std::make_shared<rs2::gl::colorizer>(), _parameters, _logger);
     _pc_filter = std::make_shared<PointcloudFilter>(std::make_shared<rs2::gl::pointcloud>(), _node, _parameters, _logger);
 #else
     _colorizer_filter = std::make_shared<NamedFilter>(std::make_shared<rs2::colorizer>(), _parameters, _logger);
@@ -262,16 +264,18 @@ void BaseRealSenseNode::setupFilters()
 
 cv::Mat& BaseRealSenseNode::fix_depth_scale(const cv::Mat& from_image, cv::Mat& to_image)
 {
-    static const float meter_to_mm = 0.001f;
-    if (fabs(_depth_scale_meters - meter_to_mm) < 1e-6)
-    {
-        to_image = from_image;
-        return to_image;
-    }
+    // static const float meter_to_mm = 0.001f;
+    // if (fabs(_depth_scale_meters - meter_to_mm) < 1e-6)
+    // {
+    //     to_image = from_image;
+    //     return to_image;
+    // }
 
     if (to_image.size() != from_image.size())
     {
-        to_image.create(from_image.rows, from_image.cols, from_image.type());
+        // to_image.create(from_image.rows, from_image.cols, from_image.type());
+	to_image.create(from_image.rows, from_image.cols,
+			_rs_format_to_cv_format[RS2_FORMAT_DISTANCE]);
     }
 
     CV_Assert(CV_MAKETYPE(from_image.depth(),from_image.channels()) == _rs_format_to_cv_format[RS2_FORMAT_Z16]);
@@ -287,14 +291,17 @@ cv::Mat& BaseRealSenseNode::fix_depth_scale(const cv::Mat& from_image, cv::Mat& 
 
     int i,j;
     const uint16_t* p_from;
-    uint16_t* p_to;
+  //uint16_t* p_to;
+    float* p_to;
     for( i = 0; i < nRows; ++i)
     {
         p_from = from_image.ptr<uint16_t>(i);
-        p_to = to_image.ptr<uint16_t>(i);
+      //p_to = to_image.ptr<uint16_t>(i);
+        p_to = to_image.ptr<float>(i);
         for ( j = 0; j < nCols; ++j)
         {
-            p_to[j] = p_from[j] * _depth_scale_meters / meter_to_mm;
+	  //p_to[j] = p_from[j] * _depth_scale_meters / meter_to_mm;
+            p_to[j] = p_from[j] * _depth_scale_meters;
         }
     }
     return to_image;
@@ -354,19 +361,19 @@ void BaseRealSenseNode::FillImuData_LinearInterpolation(const CimuData imu_data,
 
     if ((type != ACCEL) || _imu_history.size() < 3)
         return;
-    
+
     std::deque<CimuData> gyros_data;
     CimuData accel0, accel1, crnt_imu;
 
-    while (_imu_history.size()) 
+    while (_imu_history.size())
     {
         crnt_imu = _imu_history.front();
         _imu_history.pop_front();
-        if (!accel0.is_set() && crnt_imu.m_type == ACCEL) 
+        if (!accel0.is_set() && crnt_imu.m_type == ACCEL)
         {
             accel0 = crnt_imu;
-        } 
-        else if (accel0.is_set() && crnt_imu.m_type == ACCEL) 
+        }
+        else if (accel0.is_set() && crnt_imu.m_type == ACCEL)
         {
             accel1 = crnt_imu;
             const double dt = accel1.m_time_ns - accel0.m_time_ns;
@@ -380,7 +387,7 @@ void BaseRealSenseNode::FillImuData_LinearInterpolation(const CimuData imu_data,
                 imu_msgs.push_back(CreateUnitedMessage(crnt_accel, crnt_gyro));
             }
             accel0 = accel1;
-        } 
+        }
         else if (accel0.is_set() && crnt_imu.m_time_ns >= accel0.m_time_ns && crnt_imu.m_type == GYRO)
         {
             gyros_data.push_back(crnt_imu);
@@ -573,7 +580,7 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
             auto stream_format = f.get_profile().format();
             stream_index_pair sip{stream_type,stream_index};
 
-            ROS_DEBUG("Frameset contain (%s, %d, %s) frame. frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu", 
+            ROS_DEBUG("Frameset contain (%s, %d, %s) frame. frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
                 rs2_stream_to_string(stream_type), stream_index, rs2_format_to_string(stream_format), f.get_frame_number(), frame_time, t.nanoseconds());
             if (f.is<rs2::video_frame>())
                 ROS_DEBUG_STREAM("frame: " << f.as<rs2::video_frame>().get_width() << " x " << f.as<rs2::video_frame>().get_height());
@@ -613,7 +620,7 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
                 auto color_format = original_color_frame.get_profile().format();
                 auto depth_format = original_depth_frame.get_profile().format();
                 publishRGBD(_images[COLOR], color_format, _depth_aligned_image[COLOR], depth_format, t);
-            }  
+            }
         }
     }
     else if (frame.is<rs2::video_frame>())
@@ -622,7 +629,7 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
         auto stream_index = frame.get_profile().stream_index();
         ROS_DEBUG("Single video frame arrived (%s, %d). frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
                     rs2_stream_to_string(stream_type), stream_index, frame.get_frame_number(), frame_time, t.nanoseconds());
-            
+
         stream_index_pair sip{stream_type,stream_index};
         if (frame.is<rs2::depth_frame>())
         {
@@ -827,7 +834,7 @@ void BaseRealSenseNode::SetBaseStream()
             available_profiles[sip] = profile;
         }
     }
-    
+
     std::vector<stream_index_pair>::const_iterator base_stream(base_stream_priority.begin());
     while((base_stream != base_stream_priority.end()) && (available_profiles.find(*base_stream) == available_profiles.end()))
     {
@@ -1128,7 +1135,7 @@ void BaseRealSenseNode::publishRGBD(
 
 void BaseRealSenseNode::publishMetadata(rs2::frame f, const rclcpp::Time& header_time, const std::string& frame_id)
 {
-    stream_index_pair stream = {f.get_profile().stream_type(), f.get_profile().stream_index()};    
+    stream_index_pair stream = {f.get_profile().stream_type(), f.get_profile().stream_index()};
     if (_metadata_publishers.find(stream) != _metadata_publishers.end())
     {
         auto& md_publisher = _metadata_publishers.at(stream);
