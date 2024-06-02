@@ -1,0 +1,35 @@
+serial_no: ""
+usb_port_id: ""
+device_type: ""
+json_file_path: ""
+rosbag_filename: ""
+
+enable_color: true
+enable_depth: true
+enable_infra1: true
+enable_rgbd: false
+enable_sync: true
+
+pointcloud.enable: true
+pointcloud.ordered_pc: false
+#pointcloud.stream_filter: 2
+
+rgb_camera.color_profile: "640x480x60"
+
+# D405, D435
+depth_module.depth_profile: "640x480x60"
+
+# SR305
+coded_light_depth_sensor.depth_profile: "640x480x60"
+coded_light_depth_sensor.infra_profile: "640x480x60"
+
+align_depth.enable: true
+
+publish_tf: true
+tf_publish_rate: 0.0  # 0 - static transform
+
+clip_distance: -2.0
+linear_accel_cov: 0.01
+initial_reset: false
+reconnect_timeout: 6.0
+wait_for_device_timeout: -1.0

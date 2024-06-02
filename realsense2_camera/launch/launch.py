@@ -1,9 +1,12 @@
 import os
 import yaml
 from launch                   import LaunchDescription
-from launch.actions           import DeclareLaunchArgument, OpaqueFunction
+from launch.actions           import (DeclareLaunchArgument, OpaqueFunction,
+                                      GroupAction)
 from launch.substitutions     import LaunchConfiguration, PathJoinSubstitution
-from launch.conditions        import IfCondition, UnlessCondition
+from launch.conditions        import (IfCondition, UnlessCondition,
+                                      LaunchConfigurationEquals,
+                                      LaunchConfigurationNotEquals)
 from launch_ros.actions       import Node, LoadComposableNodes
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.descriptions  import ComposableNode
@@ -38,9 +41,6 @@ parameter_arguments = [{'name':        'serial_no',
                        {'name':        'pointcloud.enable',
                         'default':     'true',
                         'description': 'enable publishing pointcloud'},
-                       {'name':        'depth_module.depth_format',
-                        'default':     'Z16',
-                        'description': 'depth stream format'},
                        {'name':        'align_depth.enable',
                         'default':     'true',
                         'description': 'enable align depth filter'}]
@@ -63,51 +63,55 @@ def load_parameters(config_dir, camera_name):
         return yaml.load(f, Loader=yaml.SafeLoader)
 
 def launch_setup(context, param_args):
-    namespace = LaunchConfiguration('namespace')
-    name      = LaunchConfiguration('camera_name')
-    params    = load_parameters(
-                    LaunchConfiguration('config_dir').perform(context),
-                    name.perform(context))
-    actions   = declare_launch_arguments(param_args, params)
-    params   |= set_configurable_parameters(param_args)
-    output    = LaunchConfiguration('output')
-    container = LaunchConfiguration('container').perform(context)
-    if container == '':
-        actions.append(Node(namespace=namespace, name=name,
-                            package='realsense2_camera',
-                            executable='realsense2_camera_node',
-                            parameters=[params],
-                            output=output,
-                            arguments=['--ros-args', '--log-level',
-                                       LaunchConfiguration('log_level')],
-                            emulate_tty=True))
-    else:
-        actions += [Node(name=container,
-                         package='rclcpp_components',
-                         executable='component_container',
-                         output=output,
-                         arguments=['--ros-args', '--log-level',
-                                    LaunchConfiguration('log_level')],
-                         condition=UnlessCondition(
-                             LaunchConfiguration('external_container'))),
-                    LoadComposableNodes(
-                        target_container=container,
-                        composable_node_descriptions=[
-                            ComposableNode(
-                                namespace=namespace, name=name,
-                                package='realsense2_camera',
-                                plugin='realsense2_camera::RealSenseNodeFactory',
-                                parameters=[params],
-                                extra_arguments=[
-                                    {'use_intra_process_comms': True}]
-                            )])]
-    actions.append(Node(name='rviz',
-                        package='rviz2', executable='rviz2', output='screen',
-                        arguments=['-d',
-                                   PathJoinSubstitution([
-                                       FindPackageShare('realsense2_camera'),
-                                       'launch', 'realsense2_camera.rviz'])],
-                        condition=IfCondition(LaunchConfiguration('vis'))))
+    params   = load_parameters(
+                   LaunchConfiguration('config_dir').perform(context),
+                   LaunchConfiguration('camera_name').perform(context))
+    actions  = declare_launch_arguments(param_args, params)
+    params  |= set_configurable_parameters(param_args)
+    actions += [Node(namespace=LaunchConfiguration('namespace'),
+                     name=LaunchConfiguration('camera_name'),
+                     package='realsense2_camera',
+                     executable='realsense2_camera_node',
+                     parameters=[params],
+                     output=LaunchConfiguration('output'),
+                     arguments=['--ros-args', '--log-level',
+                                LaunchConfiguration('log_level')],
+                     emulate_tty=True,
+                     condition=LaunchConfigurationEquals('container', '')),
+                GroupAction(
+                    condition=LaunchConfigurationNotEquals('container', ''),
+                    actions=[
+                        Node(name=LaunchConfiguration('container'),
+                             package='rclcpp_components',
+                             executable='component_container',
+                             output=LaunchConfiguration('output'),
+                             arguments=['--ros-args', '--log-level',
+                                        LaunchConfiguration('log_level')],
+                             condition=UnlessCondition(
+                                 LaunchConfiguration('external_container'))),
+                        LoadComposableNodes(
+                            target_container=LaunchConfiguration('container'),
+                            composable_node_descriptions=[
+                                ComposableNode(
+                                    namespace=LaunchConfiguration('namespace'),
+                                    name=LaunchConfiguration('camera_name'),
+                                    package='realsense2_camera',
+                                    plugin='realsense2_camera::RealSenseNodeFactory',
+                                    parameters=[params],
+                                    extra_arguments=[
+                                        {'use_intra_process_comms': True}]
+                                )])]),
+                GroupAction(
+                    condition=IfCondition(LaunchConfiguration('vis')),
+                    actions=[
+                        Node(name='rviz', package='rviz2', executable='rviz2',
+                             output='screen',
+                             arguments=['-d',
+                                 PathJoinSubstitution([
+                                     FindPackageShare('realsense2_camera'),
+                                     'launch', 'realsense2_camera.rviz'])]),
+                        Node(name='rqt_reconfigure', package='rqt_reconfigure',
+                             executable='rqt_reconfigure', output='screen')])]
     return actions
 
 def generate_launch_description():
