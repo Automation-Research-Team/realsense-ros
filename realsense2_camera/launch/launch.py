@@ -109,7 +109,10 @@ def launch_setup(context, param_args):
                              arguments=['-d',
                                  PathJoinSubstitution([
                                      FindPackageShare('realsense2_camera'),
-                                     'launch', 'realsense2_camera.rviz'])]),
+                                     'launch',
+                                     LaunchConfiguration(
+                                         'camera_name').perform(context) \
+                                     +  '.rviz'])]),
                         Node(name='rqt_reconfigure', package='rqt_reconfigure',
                              executable='rqt_reconfigure', output='screen')])]
     return actions
