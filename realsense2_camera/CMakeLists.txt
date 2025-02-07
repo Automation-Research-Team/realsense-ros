@@ -1,4 +1,4 @@
-# Copyright 2023 Intel Corporation. All Rights Reserved.
+# Copyright 2024 Intel Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,8 +107,10 @@ find_package(builtin_interfaces REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(realsense2_camera_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -145,6 +147,7 @@ set(SOURCES
     src/profile_manager.cpp
     src/image_publisher.cpp
     src/tfs.cpp
+    src/actions.cpp
   )
 
 if (BUILD_ACCELERATE_GPU_WITH_GLSL)
@@ -243,6 +246,7 @@ set(dependencies
   rclcpp
   rclcpp_components
   realsense2_camera_msgs
+  std_srvs
   std_msgs
   sensor_msgs
   nav_msgs
@@ -322,6 +326,7 @@ if(BUILD_TESTING)
           $<INSTALL_INTERFACE:include>
        )
        ament_target_dependencies(${_test_name}
+          std_srvs
           std_msgs
        )
        #target_link_libraries(${_test_name} name_of_local_library)
