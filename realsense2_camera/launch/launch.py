@@ -1,21 +1,20 @@
-import yaml
-from launch                   import LaunchDescription
-from launch.actions           import (DeclareLaunchArgument, OpaqueFunction,
-                                      GroupAction)
-from launch.substitutions     import (LaunchConfiguration,
-                                      PathJoinSubstitution, EqualsSubstitution)
-from launch.conditions        import IfCondition, UnlessCondition
-from launch_ros.actions       import Node, LoadComposableNodes
-from launch_ros.substitutions import FindPackageShare
-from launch_ros.descriptions  import ComposableNode
+from launch                  import LaunchDescription
+from launch.actions          import (DeclareLaunchArgument, OpaqueFunction,
+                                     GroupAction)
+from launch.substitutions    import (LaunchConfiguration, ThisLaunchFileDir,
+                                     PathJoinSubstitution, EqualsSubstitution,
+                                     IfElseSubstitution)
+from launch.conditions       import IfCondition, UnlessCondition
+from launch_ros.actions      import Node, LoadComposableNodes
+from launch_ros.descriptions import ComposableNode
 
 launch_arguments = [
     {'name':        'namespace',
      'default':     '',
-     'description': 'namespace for camera'},
+     'description': 'namespace of the camera node'},
     {'name':        'camera_name',
-     'default':     'realsense',
-     'description': 'camera unique name'},
+     'default':     'd435',
+     'description': 'node name of the camera'},
     {'name':        'config_file',
      'default':     '',
      'description': 'path to YAML file for configuring camera'},
@@ -59,71 +58,65 @@ def set_configurable_parameters(args):
     return dict([(arg['name'], LaunchConfiguration(arg['name'])) \
                  for arg in args])
 
-def load_parameters(config_file):
-    if config_file == '':
-        return {}
-    with open(config_file, 'r') as f:
-        return yaml.load(f, Loader=yaml.SafeLoader)
-
 def launch_setup(context, param_args):
-    params   = load_parameters(
-                   LaunchConfiguration('config_file').perform(context))
-    actions  = declare_launch_arguments(param_args, params)
-    params  |= set_configurable_parameters(param_args)
-    actions += [Node(namespace=LaunchConfiguration('namespace'),
-                     name=LaunchConfiguration('camera_name'),
-                     package='realsense2_camera',
-                     executable='realsense2_camera_node',
-                     parameters=[params],
-                     output=LaunchConfiguration('output'),
-                     arguments=['--ros-args', '--log-level',
-                                LaunchConfiguration('log_level')],
-                     emulate_tty=True,
-                     condition=IfCondition(
-                                   EqualsSubstitution(
-                                       LaunchConfiguration('container'), ''))),
-                GroupAction(
-                    condition=UnlessCondition(
-                                  EqualsSubstitution(
-                                      LaunchConfiguration('container'), '')),
-                    actions=[
-                        Node(name=LaunchConfiguration('container'),
-                             package='rclcpp_components',
-                             executable='component_container',
-                             output=LaunchConfiguration('output'),
-                             arguments=['--ros-args', '--log-level',
-                                        LaunchConfiguration('log_level')],
-                             condition=UnlessCondition(
-                                 LaunchConfiguration('external_container'))),
-                        LoadComposableNodes(
-                            target_container=LaunchConfiguration('container'),
-                            composable_node_descriptions=[
-                                ComposableNode(
-                                    namespace=LaunchConfiguration('namespace'),
-                                    name=LaunchConfiguration('camera_name'),
-                                    package='realsense2_camera',
-                                    plugin='realsense2_camera::RealSenseNodeFactory',
-                                    parameters=[params],
-                                    extra_arguments=[
-                                        {'use_intra_process_comms': True}]
-                                )])]),
-                GroupAction(
-                    condition=IfCondition(LaunchConfiguration('vis')),
-                    actions=[
-                        Node(name='rviz', package='rviz2', executable='rviz2',
-                             output='screen',
-                             arguments=['-d',
-                                 PathJoinSubstitution([
-                                     FindPackageShare('realsense2_camera'),
-                                     'launch',
-                                     LaunchConfiguration(
-                                         'camera_name').perform(context) \
-                                     +  '.rviz'])]),
-                        Node(name='rqt_reconfigure', package='rqt_reconfigure',
-                             executable='rqt_reconfigure', output='screen')])]
-    return actions
+    config_file   = IfElseSubstitution(
+                        EqualsSubstitution(
+                            LaunchConfiguration('config_file'), ''),
+                        PathJoinSubstitution([ThisLaunchFileDir(), '..',
+                                              'config', 'default.yaml']),
+                        LaunchConfiguration('config_file'))
+    config_params = set_configurable_parameters(param_args)
+    return [Node(namespace=LaunchConfiguration('namespace'),
+                 name=LaunchConfiguration('camera_name'),
+                 package='realsense2_camera',
+                 executable='realsense2_camera_node',
+                 parameters=[config_file, config_params],
+                 output=LaunchConfiguration('output'),
+                 arguments=['--ros-args', '--log-level',
+                            LaunchConfiguration('log_level')],
+                 emulate_tty=True,
+                 condition=IfCondition(
+                              EqualsSubstitution(
+                                  LaunchConfiguration('container'), ''))),
+            GroupAction(
+                condition=UnlessCondition(
+                              EqualsSubstitution(
+                                  LaunchConfiguration('container'), '')),
+                actions=[
+                    Node(name=LaunchConfiguration('container'),
+                         package='rclcpp_components',
+                         executable='component_container',
+                         output=LaunchConfiguration('output'),
+                         arguments=['--ros-args', '--log-level',
+                                    LaunchConfiguration('log_level')],
+                         condition=UnlessCondition(
+                             LaunchConfiguration('external_container'))),
+                    LoadComposableNodes(
+                        target_container=LaunchConfiguration('container'),
+                        composable_node_descriptions=[
+                            ComposableNode(
+                                namespace=LaunchConfiguration('namespace'),
+                                name=LaunchConfiguration('camera_name'),
+                                package='realsense2_camera',
+                                plugin='realsense2_camera::RealSenseNodeFactory',
+                                parameters=[config_file, config_params],
+                                extra_arguments=[
+                                    {'use_intra_process_comms': True}])])]),
+            GroupAction(
+                condition=IfCondition(LaunchConfiguration('vis')),
+                actions=[
+                    Node(name='rviz', package='rviz2', executable='rviz2',
+                         output='screen',
+                         arguments=['-d',
+                                    PathJoinSubstitution([
+                                        ThisLaunchFileDir(),
+                                        [LaunchConfiguration('camera_name'),
+                                         '.rviz']])]),
+                    Node(name='rqt_reconfigure', package='rqt_reconfigure',
+                         executable='rqt_reconfigure', output='screen')])]
 
 def generate_launch_description():
-    return LaunchDescription(declare_launch_arguments(launch_arguments) + \
+    return LaunchDescription(declare_launch_arguments(launch_arguments +
+                                                      parameter_arguments) + \
                              [OpaqueFunction(function=launch_setup,
                                              args=[parameter_arguments])])
