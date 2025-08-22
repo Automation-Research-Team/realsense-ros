@@ -55,8 +55,7 @@ def declare_launch_arguments(args, defaults={}):
             for arg in args]
 
 def set_configurable_parameters(args):
-    return dict([(arg['name'], LaunchConfiguration(arg['name'])) \
-                 for arg in args])
+    return {arg['name']: LaunchConfiguration(arg['name']) for arg in args}
 
 def launch_setup(context, param_args):
     config_file   = IfElseSubstitution(
@@ -85,7 +84,7 @@ def launch_setup(context, param_args):
                 actions=[
                     Node(name=LaunchConfiguration('container'),
                          package='rclcpp_components',
-                         executable='component_container',
+                         executable='component_container_mt',
                          output=LaunchConfiguration('output'),
                          arguments=['--ros-args', '--log-level',
                                     LaunchConfiguration('log_level')],
