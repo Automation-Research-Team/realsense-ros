@@ -20,19 +20,23 @@ launch_arguments = [
      'description': 'path to YAML file for configuring camera'},
     {'name':        'external_container',
      'default':     'false',
-     'description': 'use existing external container'},
+     'description': 'use existing external container',
+     'choices':     ['true', 'false']},
     {'name':        'container',
      'default':     '',
      'description': 'name of internal or external component container'},
     {'name':        'vis',
      'default':     'false',
-     'description': 'visualize camera outputs'},
+     'description': 'visualize camera outputs',
+     'choices':     ['true', 'false']},
     {'name':        'log_level',
      'default':     'info',
-     'description': 'debug log level [DEBUG|INFO|WARN|ERROR|FATAL]'},
+     'description': 'debug log level',
+     'choices':     ['debug', 'info', 'warn', 'error', 'fatal']},
     {'name':        'output',
-     'default':     'both',
-     'description': 'pipe node output [screen|log]'}]
+     'default':     'screen',
+     'description': 'pipe node output',
+     'choices':     ['screen', 'log', 'both']}]
 
 parameter_arguments = [
     {'name':        'serial_no',
@@ -40,23 +44,22 @@ parameter_arguments = [
      'description': 'choose device by serial number'},
     {'name':        'pointcloud.enable',
      'default':     'true',
-     'description': 'enable publishing pointcloud'},
+     'description': 'enable publishing pointcloud',
+     'choices':     ['true', 'false']},
     {'name':        'align_depth.enable',
      'default':     'true',
-     'description': 'enable align depth filter'}]
+     'description': 'enable align depth filter',
+     'choices':     ['true', 'false']}]
 
-def declare_launch_arguments(args, defaults={}):
-    num_to_str = lambda x : str(x) if isinstance(x, (bool, int, float)) else x
-    return [DeclareLaunchArgument(
-                arg['name'],
-                default_value=num_to_str(defaults.get(arg['name'],
-                                                      arg['default'])),
-                description=arg['description']) \
+def declare_launch_arguments(args):
+    return [DeclareLaunchArgument(arg['name'],
+                                  default_value=arg.get('default'),
+                                  description=arg.get('description'),
+                                  choices=arg.get('choices')) \
             for arg in args]
 
 def set_configurable_parameters(args):
-    return dict([(arg['name'], LaunchConfiguration(arg['name'])) \
-                 for arg in args])
+    return {arg['name']: LaunchConfiguration(arg['name']) for arg in args}
 
 def launch_setup(context, param_args):
     config_file   = IfElseSubstitution(
