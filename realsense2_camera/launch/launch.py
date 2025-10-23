@@ -1,12 +1,14 @@
-from launch                   import LaunchDescription
-from launch.actions           import (DeclareLaunchArgument, OpaqueFunction,
-                                      GroupAction)
-from launch.substitutions     import (LaunchConfiguration,
-                                      PathJoinSubstitution, EqualsSubstitution)
-from launch.conditions        import IfCondition, UnlessCondition
-from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions       import Node, LoadComposableNodes
-from launch_ros.descriptions  import ComposableNode
+from launch                            import LaunchDescription
+from launch.actions                    import (DeclareLaunchArgument,
+                                               OpaqueFunction, GroupAction)
+from launch.substitutions              import (LaunchConfiguration,
+                                               PathJoinSubstitution,
+                                               EqualsSubstitution)
+from launch.conditions                 import IfCondition, UnlessCondition
+from launch_ros.substitutions          import FindPackageShare
+from launch_ros.actions                import Node, LoadComposableNodes
+from launch_ros.descriptions           import ComposableNode
+from launch_ros.parameter_descriptions import ParameterFile
 
 launch_arguments = [
     {
@@ -16,8 +18,13 @@ launch_arguments = [
     },
     {
         'name':        'camera_name',
-        'default':     'd435',
+        'default':     'realsense',
         'description': 'node name of the camera'
+    },
+    {
+        'name':        'serial_no',
+        'default':     '""',
+        'description': 'unique serial number of the camera'
     },
     {
         'name':        'config_file',
@@ -64,12 +71,14 @@ def declare_launch_arguments(args):
             for arg in args]
 
 def launch_setup(context):
+    param_file = ParameterFile(LaunchConfiguration('config_file'),
+                               allow_substs=True)
     return [
         Node(namespace=LaunchConfiguration('namespace'),
              name=LaunchConfiguration('camera_name'),
              package='realsense2_camera',
              executable='realsense2_camera_node',
-             parameters=[LaunchConfiguration('config_file')],
+             parameters=[param_file],
              output=LaunchConfiguration('output'),
              arguments=['--ros-args', '--log-level',
                         LaunchConfiguration('log_level')],
@@ -98,7 +107,7 @@ def launch_setup(context):
                             name=LaunchConfiguration('camera_name'),
                             package='realsense2_camera',
                             plugin='realsense2_camera::RealSenseNodeFactory',
-                            parameters=[LaunchConfiguration('config_file')],
+                            parameters=[param_file],
                             extra_arguments=[{'use_intra_process_comms': True}]
                         )
                     ])
@@ -112,7 +121,7 @@ def launch_setup(context):
                          '-d',
                          PathJoinSubstitution([
                              FindPackageShare('realsense2_camera'), 'launch',
-                             [LaunchConfiguration('camera_name'), '.rviz']])
+                             'realsense.rviz'])
                      ]),
                 Node(name='rqt_reconfigure', package='rqt_reconfigure',
                      executable='rqt_reconfigure', output='screen')
