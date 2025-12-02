@@ -13,12 +13,6 @@ realsense:
     enable_sync:   true
     enable_infra1: true
 
-    rgb_camera.color_profile:               "640x480x30"
-    depth_module.depth_profile:             "640x480x30"  # D405, D435
-    depth_module.infra_profile:             "848x480x60"  # D405, D435
-    coded_light_depth_sensor.depth_profile: "640x480x30"  # SR305
-    coded_light_depth_sensor.infra_profile: "640x480x30"  # SR305
-
     pointcloud.enable:                  true
     pointcloud.stream_filter:           RS2_STREAM_COLOR  # RS2_STREAM_ANY
     pointcloud.stream_index_filter:     0
