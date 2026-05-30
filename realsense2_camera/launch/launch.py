@@ -44,12 +44,6 @@ launch_arguments = [
         'default':     '',
         'description': 'name of internal or external component container'},
     {
-        'name':        'vis',
-        'default':     'false',
-        'description': 'visualize camera outputs',
-        'choices':     ['true', 'false', 'True', 'False']
-    },
-    {
         'name':        'log_level',
         'default':     'info',
         'description': 'debug log level',
@@ -112,20 +106,6 @@ def launch_setup(context):
                         )
                     ])
             ]),
-        GroupAction(
-            condition=IfCondition(LaunchConfiguration('vis')),
-            actions=[
-                Node(name='rviz', package='rviz2', executable='rviz2',
-                     output='screen',
-                     arguments=[
-                         '-d',
-                         PathJoinSubstitution([
-                             FindPackageShare('realsense2_camera'), 'launch',
-                             'realsense.rviz'])
-                     ]),
-                Node(name='rqt_reconfigure', package='rqt_reconfigure',
-                     executable='rqt_reconfigure', output='screen')
-            ])
     ]
 
 def generate_launch_description():
